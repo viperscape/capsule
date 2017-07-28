@@ -1,7 +1,7 @@
 use nickel::{Nickel, HttpRouter, FormBody};
 
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc,Mutex};
 use ldap::Ldap;
 
 pub struct Server {
@@ -10,6 +10,8 @@ pub struct Server {
 
     ip: String,
     port: String,
+
+    clients: Arc<Mutex<HashMap<String,String>>>,
 }
 
 impl Server {
@@ -21,6 +23,8 @@ impl Server {
 
             ip: config.web_ip.clone(),
             port: config.web_port.clone(),
+
+            clients: Arc::new(Mutex::new(HashMap::new())),
         };
 
         s.apply_routes();
@@ -29,6 +33,7 @@ impl Server {
 
     fn apply_routes(&mut self) {
         let ad = Arc::new(self.ad.clone());
+        let clients = self.clients.clone();
         
         self.server.get("/", middleware!("Hello World"));
 
@@ -49,6 +54,11 @@ impl Server {
                                     if !username.is_empty() &&
                                         !password.is_empty() {
                                             if ad.auth(&username,&password) {
+                                                if let Ok(mut clients) = clients.lock() {
+                                                    clients.insert(username.to_owned(),
+                                                                   "session".to_owned());
+                                                }
+                                                
                                                 let mut data = HashMap::new();
                                                 data.insert("authenticated","true");
                                                 return res.render("views/auth.html", &data)
