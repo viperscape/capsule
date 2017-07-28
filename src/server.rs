@@ -57,7 +57,8 @@ impl Server {
                                 }
                             }
 
-                            let data: HashMap<String,String> = HashMap::new();
+                            let mut data = HashMap::new();
+                            data.insert("target","/login"); //start over
                             return res.render("views/invalid.html", &data)
                          });
     }
