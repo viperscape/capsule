@@ -1,0 +1,12 @@
+[package]
+name = "capsule"
+version = "0.1.0"
+authors = ["viperscape <chrisfgill@gmail.com>"]
+
+[dependencies]
+ldap3 = "0.5"
+toml = "0.4.2"
+serde = "1.0"
+serde_derive = "1.0"
+
+nickel = "0.10"
