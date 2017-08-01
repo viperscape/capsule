@@ -11,7 +11,14 @@ use std::collections::HashMap;
 use std::sync::{Arc,Mutex};
 use ldap::Ldap;
 
-pub type Clients = Arc<Mutex<HashMap<String,String>>>;
+use std::time::{Duration, Instant};
+
+pub struct Client {
+    sid: String,
+    session: Instant, 
+}
+
+pub type Clients = Arc<Mutex<HashMap<String,Client>>>;
 
 pub struct Server {
     server: Nickel,
@@ -40,6 +47,7 @@ impl Server {
 
     fn apply_routes(&mut self) {
         let ad = Arc::new(self.ad.clone());
+        let max_age = self.config.session as u64;
         
         // we must make BC happy
         let clients_set_auth = self.clients.clone();
@@ -47,7 +55,7 @@ impl Server {
         
         self.server.get("/", middleware!
                         { |req, res|
-                           if Server::is_auth(req, &clients_get_auth) {
+                           if Server::is_auth(req, &clients_get_auth, max_age) {
                                return res.redirect("/special")
                            }
                            
@@ -76,8 +84,9 @@ impl Server {
                                                     let sid = random::<u64>() .to_string();
                                                     let cookie_sid = Cookie::new("sid", sid.clone()).to_string();
                                                     let cookie_username = Cookie::new("username", username.clone()).to_string();
+                                                    let client = Client { sid: sid, session: Instant::now() };
                                                     clients.insert(username,
-                                                                  sid);
+                                                                   client);
                                                     
                                                     res.headers_mut().set_raw("Set-Cookie",
                                                                               vec![cookie_sid.as_bytes().to_vec(),
@@ -136,15 +145,17 @@ impl Server {
         None
     }
 
-    fn is_auth (req: &Request, cm: &Clients) -> bool {
+    fn is_auth (req: &Request, cm: &Clients, max_age: u64) -> bool {
         if let Some(cookies) =  req.origin.headers.get_raw("Cookie") {
             let cookies = Server::parse_cookies(cookies);
             if let Some(username) = Server::get_cookie("username", &cookies) {
                 if let Some(sid) = Server::get_cookie("sid", &cookies) {
                     if let Ok(cm) = cm.lock() {
                         if let Some(c) = cm.get(username) {
-                            if c == sid {
-                                return true
+                            if c.sid == sid {
+                                if c.session.elapsed() < Duration::from_secs(max_age) {
+                                    return true
+                                }
                             }
                         }
                     }
