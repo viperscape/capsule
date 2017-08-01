@@ -12,12 +12,22 @@ use std::fs::File;
 use std::io::prelude::*;
 
 #[derive(Deserialize,Clone)]
-pub struct Config {
-    ldap_server: String,
-    ldap_domain: String,
+pub struct DomainConfig {
+    server: String,
+    domain: String,
+    secure: bool,
+}
 
-    web_ip: String,
-    web_port: String,
+#[derive(Deserialize,Clone)]
+pub struct WebConfig {
+    ip: String,
+    port: i64,
+}
+
+#[derive(Deserialize,Clone)]
+pub struct Config {
+    domain: DomainConfig,
+    web: WebConfig
 }
 
 fn main() {
