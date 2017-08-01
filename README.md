@@ -16,4 +16,5 @@ secure = false
 [web]
 port = 6060
 ip  = "0.0.0.0"
+session = 1200
 ```
