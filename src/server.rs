@@ -17,8 +17,7 @@ pub struct Server {
     server: Nickel,
     ad: Ldap,
 
-    ip: String,
-    port: i64,
+    config: ::WebConfig,
 
     clients: Clients,
 }
@@ -30,8 +29,7 @@ impl Server {
             server:server,
             ad:ad,
 
-            ip: config.web.ip.clone(),
-            port: config.web.port,
+            config: config.web.clone(),
 
             clients: Arc::new(Mutex::new(HashMap::new())),
         };
@@ -104,7 +102,7 @@ impl Server {
     }
 
     pub fn start(self) {
-        let address = self.ip + ":" + &self.port.to_string();
+        let address = self.config.ip + ":" + &self.config.port.to_string();
         if let Ok(_s) = self.server.listen(&address) {
             // NOTE: we may detach this at some point!
         }

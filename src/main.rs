@@ -22,6 +22,7 @@ pub struct DomainConfig {
 pub struct WebConfig {
     ip: String,
     port: i64,
+    session: i64,
 }
 
 #[derive(Deserialize,Clone)]
