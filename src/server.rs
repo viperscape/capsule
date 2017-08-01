@@ -49,13 +49,10 @@ impl Server {
         let ad = Arc::new(self.ad.clone());
         let max_age = self.config.session as u64;
         
-        // we must make BC happy
-        let clients_set_auth = self.clients.clone();
-        let clients_get_auth = self.clients.clone();
-        
+        let clients = self.clients.clone();
         self.server.get("/", middleware!
                         { |req, res|
-                           if Server::is_auth(req, &clients_get_auth, max_age) {
+                           if Server::is_auth(req, &clients, max_age) {
                                return res.redirect("/special")
                            }
                            
@@ -70,6 +67,7 @@ impl Server {
                             return res.render("views/login.html", &data)
                         });
 
+        let clients = self.clients.clone();
         self.server.post("/auth", middleware!
                          { |req, mut res|
                             let form_data = try_with!(res, req.form_body());
@@ -80,7 +78,7 @@ impl Server {
                                     if !username.is_empty() &&
                                         !password.is_empty() {
                                             if ad.auth(&username,&password) {
-                                                if let Ok(mut clients) = clients_set_auth.lock() {
+                                                if let Ok(mut clients) = clients.lock() {
                                                     let sid = random::<u64>() .to_string();
                                                     let cookie_sid = Cookie::new("sid", sid.clone()).to_string();
                                                     let cookie_username = Cookie::new("username", username.clone()).to_string();
